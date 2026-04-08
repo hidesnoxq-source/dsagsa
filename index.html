@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Surfshark Checker Dashboard</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦈</text></svg>"/>
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #161b24;
+    --surface2: #1e2535;
+    --border: #2a3347;
+    --accent: #4f8ef7;
+    --accent2: #6c63ff;
+    --green: #2ecc71;
+    --red: #e74c3c;
+    --yellow: #f39c12;
+    --blue: #3498db;
+    --purple: #9b59b6;
+    --text: #e8ecf3;
+    --muted: #7a8499;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 14px;
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo-icon {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+  .logo h1 { font-size: 16px; font-weight: 700; color: var(--text); }
+  .logo span { font-size: 11px; color: var(--muted); }
+  .conn-status {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--muted);
+  }
+  .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--red);
+    transition: background .3s;
+  }
+  .dot.online { background: var(--green); }
+
+  /* ── Layout ── */
+  main { padding: 20px 24px; max-width: 1400px; margin: 0 auto; }
+
+  /* ── Stats Bar ── */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 14px;
+    margin-bottom: 22px;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .stat-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0;
+    width: 3px; height: 100%;
+    background: var(--accent);
+  }
+  .stat-card.green::before { background: var(--green); }
+  .stat-card.red::before { background: var(--red); }
+  .stat-card.yellow::before { background: var(--yellow); }
+  .stat-card.blue::before { background: var(--blue); }
+  .stat-card.purple::before { background: var(--purple); }
+
+  .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+  .stat-value { font-size: 26px; font-weight: 700; line-height: 1; }
+  .stat-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+  /* ── Two-column layout ── */
+  .panels {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  @media(max-width:800px) { .panels { grid-template-columns: 1fr; } }
+
+  /* ── Panel ── */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .panel-header {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .panel-title {
+    font-size: 13px; font-weight: 600;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .panel-body { padding: 18px; }
+
+  /* ── Drop Zone ── */
+  .dropzone {
+    border: 2px dashed var(--border);
+    border-radius: 8px;
+    padding: 28px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all .2s;
+    position: relative;
+  }
+  .dropzone:hover, .dropzone.drag { border-color: var(--accent); background: rgba(79,142,247,.05); }
+  .dropzone input[type=file] {
+    position: absolute; inset: 0;
+    opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  .dz-icon { font-size: 28px; margin-bottom: 8px; }
+  .dz-text { color: var(--muted); font-size: 13px; }
+  .dz-hint { font-size: 11px; color: var(--muted); opacity: .7; margin-top: 4px; }
+  .dz-loaded { margin-top: 10px; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: rgba(79,142,247,.15); color: var(--accent);
+    border-radius: 20px; padding: 4px 12px;
+    font-size: 12px; font-weight: 600;
+  }
+  .badge.green { background: rgba(46,204,113,.15); color: var(--green); }
+  .badge.red { background: rgba(231,76,60,.15); color: var(--red); }
+
+  /* ── Buttons ── */
+  .btn-row { display: flex; gap: 10px; margin-top: 14px; }
+  button {
+    border: none; border-radius: 8px;
+    padding: 9px 18px;
+    font-size: 13px; font-weight: 600;
+    cursor: pointer;
+    transition: all .2s;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: white;
+    flex: 1;
+  }
+  .btn-primary:hover { opacity: .9; transform: translateY(-1px); }
+  .btn-primary:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+  .btn-danger { background: rgba(231,76,60,.15); color: var(--red); border: 1px solid rgba(231,76,60,.3); }
+  .btn-danger:hover { background: rgba(231,76,60,.25); }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { background: var(--border); }
+
+  /* ── Progress Bar ── */
+  .progress-wrap { margin-top: 14px; }
+  .progress-label { font-size: 11px; color: var(--muted); margin-bottom: 5px; display: flex; justify-content: space-between; }
+  .progress-bar { height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 3px; transition: width .4s; }
+
+  /* ── Results Table ── */
+  .results-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .results-toolbar {
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .filter-tabs {
+    display: flex; gap: 6px;
+  }
+  .filter-tab {
+    padding: 5px 12px;
+    border-radius: 6px;
+    font-size: 12px; font-weight: 600;
+    cursor: pointer;
+    background: var(--surface2);
+    color: var(--muted);
+    border: 1px solid var(--border);
+    transition: all .15s;
+  }
+  .filter-tab.active { background: var(--accent); color: white; border-color: var(--accent); }
+  .table-wrap { overflow-x: auto; max-height: 340px; overflow-y: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th {
+    position: sticky; top: 0;
+    background: var(--surface2);
+    padding: 9px 14px;
+    text-align: left;
+    font-weight: 600; color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    text-transform: uppercase; letter-spacing: .4px;
+    font-size: 11px;
+  }
+  td { padding: 8px 14px; border-bottom: 1px solid var(--border); color: var(--text); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,.02); }
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 9px; border-radius: 20px;
+    font-size: 11px; font-weight: 700;
+  }
+  .pill-valid { background: rgba(46,204,113,.15); color: var(--green); }
+  .pill-cvv { background: rgba(52,152,219,.15); color: var(--blue); }
+  .pill-avs { background: rgba(243,156,18,.15); color: var(--yellow); }
+  .pill-declined { background: rgba(231,76,60,.15); color: var(--red); }
+  .pill-error { background: rgba(122,132,153,.15); color: var(--muted); }
+  .empty-state { text-align: center; padding: 50px; color: var(--muted); }
+  .empty-icon { font-size: 36px; margin-bottom: 8px; }
+
+  /* ── Log ── */
+  .log-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .log-body {
+    background: #0a0c10;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 12px;
+    height: 200px;
+    overflow-y: auto;
+    padding: 14px;
+  }
+  .log-line { margin-bottom: 3px; color: #a0b0c0; line-height: 1.5; }
+  .log-line.live { color: var(--green); }
+  .log-line.dead { color: var(--red); }
+  .log-line.info { color: var(--accent); }
+
+  /* ── Spinner ── */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner {
+    width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,.2);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+  }
+  .spin-accent {
+    border-color: rgba(79,142,247,.2);
+    border-top-color: var(--accent);
+  }
+
+  /* ── Toast ── */
+  #toasts { position: fixed; bottom: 20px; right: 20px; z-index: 999; display: flex; flex-direction: column; gap: 8px; }
+  .toast {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    min-width: 220px;
+    font-size: 13px;
+    animation: slideIn .3s ease;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .toast.success { border-left: 3px solid var(--green); }
+  .toast.error { border-left: 3px solid var(--red); }
+  @keyframes slideIn { from { transform: translateX(50px); opacity:0; } to { transform:none; opacity:1; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🦈</div>
+    <div>
+      <h1>Surfshark Checker</h1>
+      <span>Dashboard v3.0</span>
+    </div>
+  </div>
+  <div class="conn-status">
+    <div class="dot" id="wsDot"></div>
+    <span id="wsLabel">Подключение...</span>
+  </div>
+</header>
+
+<main>
+
+  <!-- Stats -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Всего прокси</div>
+      <div class="stat-value" id="s-totalProxies">0</div>
+      <div class="stat-sub">загружено</div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-label">Живых прокси</div>
+      <div class="stat-value" id="s-liveProxies">0</div>
+      <div class="stat-sub" id="s-liveProxiesSub">не тестировались</div>
+    </div>
+    <div class="stat-card blue">
+      <div class="stat-label">Карт загружено</div>
+      <div class="stat-value" id="s-totalCards">0</div>
+      <div class="stat-sub">в очереди</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Проверено</div>
+      <div class="stat-value" id="s-checked">0</div>
+      <div class="stat-sub" id="s-checkedSub">из 0</div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-label">✅ Valid</div>
+      <div class="stat-value" id="s-valid">0</div>
+    </div>
+    <div class="stat-card blue">
+      <div class="stat-label">🔷 CVV Only</div>
+      <div class="stat-value" id="s-cvv">0</div>
+    </div>
+    <div class="stat-card yellow">
+      <div class="stat-label">🔶 AVS Only</div>
+      <div class="stat-value" id="s-avs">0</div>
+    </div>
+    <div class="stat-card red">
+      <div class="stat-label">❌ Declined</div>
+      <div class="stat-value" id="s-declined">0</div>
+    </div>
+  </div>
+
+  <!-- Upload Panels -->
+  <div class="panels">
+
+    <!-- Proxies Panel -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">🔗 Прокси</div>
+        <span id="proxyBadge" class="badge">0 шт</span>
+      </div>
+      <div class="panel-body">
+        <div class="dropzone" id="proxyDrop">
+          <input type="file" id="proxyFile" accept=".txt"/>
+          <div class="dz-icon">📂</div>
+          <div class="dz-text">Нажмите или перетащите файл прокси</div>
+          <div class="dz-hint">Формат: host:port | host:port:user:pass | socks5://host:port</div>
+          <div class="dz-loaded" id="proxyLoadedInfo"></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn-primary" id="btnTestProxies" onclick="testProxies()">
+            <span>🧪 Тест прокси</span>
+          </button>
+          <button class="btn-secondary" onclick="clearProxies()">Очистить</button>
+        </div>
+        <div class="progress-wrap" id="proxyTestProgress" style="display:none">
+          <div class="progress-label">
+            <span>Тестирование...</span>
+            <span id="proxyTestLabel"></span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" id="proxyTestBar" style="width:0%"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cards Panel -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">💳 Карты</div>
+        <span id="cardBadge" class="badge">0 шт</span>
+      </div>
+      <div class="panel-body">
+        <div class="dropzone" id="cardDrop">
+          <input type="file" id="cardFile" accept=".txt"/>
+          <div class="dz-icon">📂</div>
+          <div class="dz-text">Нажмите или перетащите файл карт</div>
+          <div class="dz-hint">Формат: number|month|year|cvv или number|month|year|cvv|name</div>
+          <div class="dz-loaded" id="cardLoadedInfo"></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn-primary" id="btnStartCheck" onclick="startCheck()">
+            <span>🚀 Запустить чек</span>
+          </button>
+          <button class="btn-danger" id="btnStopCheck" onclick="stopCheck()" disabled>⛔ Стоп</button>
+          <button class="btn-secondary" onclick="clearCards()">Очистить</button>
+        </div>
+        <div class="progress-wrap" id="checkProgress" style="display:none">
+          <div class="progress-label">
+            <span>Чек...</span>
+            <span id="checkProgressLabel">0%</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" id="checkProgressBar" style="width:0%"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results Table -->
+  <div class="results-panel">
+    <div class="results-toolbar">
+      <div class="panel-title">📋 Результаты <span id="resultCount" style="color:var(--muted);font-weight:400;font-size:12px;margin-left:6px">0</span></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <div class="filter-tabs">
+          <div class="filter-tab active" data-filter="ALL" onclick="setFilter('ALL',this)">Все</div>
+          <div class="filter-tab" data-filter="VALID" onclick="setFilter('VALID',this)">✅ Valid</div>
+          <div class="filter-tab" data-filter="CVV_ONLY" onclick="setFilter('CVV_ONLY',this)">🔷 CVV</div>
+          <div class="filter-tab" data-filter="AVS_ONLY" onclick="setFilter('AVS_ONLY',this)">🔶 AVS</div>
+          <div class="filter-tab" data-filter="DECLINED" onclick="setFilter('DECLINED',this)">❌ Dec</div>
+          <div class="filter-tab" data-filter="ERROR" onclick="setFilter('ERROR',this)">⚠️ Err</div>
+        </div>
+        <button class="btn-secondary" onclick="exportResults()" style="font-size:12px;padding:6px 12px">📥 Экспорт</button>
+        <button class="btn-secondary" onclick="clearResults()" style="font-size:12px;padding:6px 12px">🗑 Очистить</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table id="resultsTable">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Номер карты</th>
+            <th>Месяц/Год</th>
+            <th>CVV</th>
+            <th>Имя</th>
+            <th>Статус</th>
+            <th>Сообщение</th>
+            <th>Время</th>
+            <th>Прокси</th>
+          </tr>
+        </thead>
+        <tbody id="resultsBody">
+          <tr><td colspan="9"><div class="empty-state"><div class="empty-icon">📭</div><div>Результатов пока нет</div></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Log -->
+  <div class="log-panel">
+    <div class="panel-header">
+      <div class="panel-title">📡 Лог</div>
+      <button class="btn-secondary" onclick="clearLog()" style="font-size:11px;padding:4px 10px">Очистить</button>
+    </div>
+    <div class="log-body" id="logBody"></div>
+  </div>
+
+</main>
+
+<div id="toasts"></div>
+
+<script>
+// ── State ────────────────────────────────────────────────────────────────────
+let ws = null;
+let allResults = [];
+let currentFilter = 'ALL';
+let stats = {};
+
+// ── WebSocket ─────────────────────────────────────────────────────────────────
+function connectWS() {
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  ws = new WebSocket(`${proto}://${location.host}/ws`);
+
+  ws.onopen = () => {
+    document.getElementById('wsDot').classList.add('online');
+    document.getElementById('wsLabel').textContent = 'Подключено';
+    addLog('🟢 Подключено к серверу', 'info');
+  };
+  ws.onclose = () => {
+    document.getElementById('wsDot').classList.remove('online');
+    document.getElementById('wsLabel').textContent = 'Отключено — переподключение...';
+    setTimeout(connectWS, 3000);
+  };
+  ws.onerror = () => ws.close();
+
+  ws.onmessage = (ev) => {
+    try {
+      const msg = JSON.parse(ev.data);
+      if (msg.type === 'status') updateStats(msg.payload);
+      else if (msg.type === 'result') addResult(msg.payload);
+      else if (msg.type === 'log') addLog(msg.payload);
+    } catch(e) {}
+  };
+}
+
+// ── Stats ─────────────────────────────────────────────────────────────────────
+function updateStats(s) {
+  stats = s;
+  setText('s-totalProxies', s.totalProxies);
+  setText('s-liveProxies', s.liveProxies);
+  setText('s-totalCards', s.totalCards);
+  setText('s-checked', s.checked);
+  setText('s-valid', s.valid);
+  setText('s-cvv', s.cvvOnly);
+  setText('s-avs', s.avsOnly);
+  setText('s-declined', s.declined);
+  setText('s-checkedSub', `из ${s.totalCards}`);
+
+  if (s.totalProxies > 0) {
+    const pct = s.totalProxies > 0 ? Math.round(s.liveProxies / s.totalProxies * 100) : 0;
+    setText('s-liveProxiesSub', `${pct}% живых`);
+  }
+
+  const proxyBadge = document.getElementById('proxyBadge');
+  proxyBadge.textContent = `${s.totalProxies} шт`;
+  proxyBadge.className = s.liveProxies > 0 ? 'badge green' : 'badge';
+
+  const cardBadge = document.getElementById('cardBadge');
+  cardBadge.textContent = `${s.totalCards} шт`;
+  cardBadge.className = s.totalCards > 0 ? 'badge green' : 'badge';
+
+  // Progress
+  if (s.isChecking && s.totalCards > 0) {
+    const pct = Math.round(s.checked / s.totalCards * 100);
+    show('checkProgress');
+    setText('checkProgressLabel', `${pct}% (${s.checked}/${s.totalCards})`);
+    document.getElementById('checkProgressBar').style.width = pct + '%';
+  } else {
+    hide('checkProgress');
+  }
+
+  if (s.isTestingProxies) {
+    show('proxyTestProgress');
+    document.getElementById('proxyTestBar').style.width = '60%';
+  } else {
+    hide('proxyTestProgress');
+  }
+
+  // Button states
+  document.getElementById('btnStartCheck').disabled = s.isChecking;
+  document.getElementById('btnStopCheck').disabled = !s.isChecking;
+  document.getElementById('btnTestProxies').disabled = s.isTestingProxies;
+
+  if (s.isChecking) {
+    document.getElementById('btnStartCheck').innerHTML = '<div class="spinner"></div><span>Идёт чек...</span>';
+  } else {
+    document.getElementById('btnStartCheck').innerHTML = '<span>🚀 Запустить чек</span>';
+  }
+  if (s.isTestingProxies) {
+    document.getElementById('btnTestProxies').innerHTML = '<div class="spinner spin-accent"></div><span>Тестирование...</span>';
+  } else {
+    document.getElementById('btnTestProxies').innerHTML = '<span>🧪 Тест прокси</span>';
+  }
+}
+
+// ── Results ───────────────────────────────────────────────────────────────────
+function addResult(r) {
+  allResults.push(r);
+  setText('resultCount', allResults.length);
+  renderResults();
+}
+
+function renderResults() {
+  const body = document.getElementById('resultsBody');
+  const filtered = currentFilter === 'ALL'
+    ? allResults
+    : allResults.filter(r => r.status === currentFilter);
+
+  if (filtered.length === 0) {
+    body.innerHTML = `<tr><td colspan="9"><div class="empty-state"><div class="empty-icon">📭</div><div>Нет результатов</div></div></td></tr>`;
+    return;
+  }
+
+  body.innerHTML = filtered.map((r, i) => {
+    const pill = statusPill(r.status);
+    const proxy = r.proxy === 'direct' ? '<span style="color:var(--muted)">direct</span>' : truncate(r.proxy, 28);
+    return `<tr>
+      <td style="color:var(--muted)">${filtered.length - i}</td>
+      <td style="font-family:monospace">${r.card.number}</td>
+      <td>${r.card.month}/${r.card.year}</td>
+      <td style="font-family:monospace">${r.card.cvv}</td>
+      <td>${r.card.name || '<span style="color:var(--muted)">—</span>'}</td>
+      <td>${pill}</td>
+      <td>${r.message}</td>
+      <td>${r.time.toFixed(2)}s</td>
+      <td style="font-size:11px;color:var(--muted)">${proxy}</td>
+    </tr>`;
+  }).join('');
+}
+
+function statusPill(s) {
+  const map = {
+    VALID: ['pill-valid','✅ VALID'],
+    CVV_ONLY: ['pill-cvv','🔷 CVV'],
+    AVS_ONLY: ['pill-avs','🔶 AVS'],
+    DECLINED: ['pill-declined','❌ DEC'],
+    ERROR: ['pill-error','⚠️ ERR'],
+  };
+  const [cls, lbl] = map[s] || ['pill-error', s];
+  return `<span class="status-pill ${cls}">${lbl}</span>`;
+}
+
+function setFilter(f, el) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderResults();
+}
+
+function clearResults() {
+  allResults = [];
+  setText('resultCount', 0);
+  renderResults();
+}
+
+// ── Log ───────────────────────────────────────────────────────────────────────
+function addLog(text, type='') {
+  const body = document.getElementById('logBody');
+  const line = document.createElement('div');
+  line.className = 'log-line ' + type;
+  if (text.includes('[LIVE]')) line.className = 'log-line live';
+  else if (text.includes('[DEAD]')) line.className = 'log-line dead';
+  else if (text.includes('🟢') || text.includes('✅') || text.includes('🚀') || type === 'info') line.className = 'log-line info';
+  const now = new Date();
+  const ts = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
+  line.textContent = `[${ts}] ${text}`;
+  body.appendChild(line);
+  // Keep last 500 lines
+  while (body.children.length > 500) body.removeChild(body.firstChild);
+  body.scrollTop = body.scrollHeight;
+}
+
+function clearLog() {
+  document.getElementById('logBody').innerHTML = '';
+}
+
+// ── File Upload ───────────────────────────────────────────────────────────────
+function setupDropzone(dropId, inputId, uploadFn) {
+  const drop = document.getElementById(dropId);
+  const input = document.getElementById(inputId);
+  drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('drag'); });
+  drop.addEventListener('dragleave', () => drop.classList.remove('drag'));
+  drop.addEventListener('drop', e => {
+    e.preventDefault();
+    drop.classList.remove('drag');
+    const file = e.dataTransfer.files[0];
+    if (file) uploadFn(file);
+  });
+  input.addEventListener('change', () => {
+    if (input.files[0]) uploadFn(input.files[0]);
+    input.value = '';
+  });
+}
+
+async function uploadProxies(file) {
+  const fd = new FormData();
+  fd.append('file', file);
+  try {
+    const r = await fetch('/api/upload/proxies', { method: 'POST', body: fd });
+    const data = await r.json();
+    if (data.ok) {
+      document.getElementById('proxyLoadedInfo').innerHTML = `<span class="badge green">✓ ${data.count} прокси загружено</span>`;
+      toast(`Загружено ${data.count} прокси`, 'success');
+    } else {
+      toast('Ошибка загрузки прокси', 'error');
+    }
+  } catch(e) { toast('Ошибка: ' + e.message, 'error'); }
+}
+
+async function uploadCards(file) {
+  const fd = new FormData();
+  fd.append('file', file);
+  try {
+    const r = await fetch('/api/upload/cards', { method: 'POST', body: fd });
+    const data = await r.json();
+    if (data.ok) {
+      document.getElementById('cardLoadedInfo').innerHTML = `<span class="badge green">✓ ${data.count} карт загружено</span>`;
+      toast(`Загружено ${data.count} карт`, 'success');
+    } else {
+      toast('Ошибка загрузки карт', 'error');
+    }
+  } catch(e) { toast('Ошибка: ' + e.message, 'error'); }
+}
+
+// ── Actions ───────────────────────────────────────────────────────────────────
+async function testProxies() {
+  const r = await fetch('/api/proxy/test', { method: 'POST' });
+  const d = await r.json();
+  if (!d.ok) toast(d.message || 'Ошибка', 'error');
+  else toast('Тест прокси запущен', 'success');
+}
+
+async function startCheck() {
+  const r = await fetch('/api/check/start', { method: 'POST' });
+  const d = await r.json();
+  if (!d.ok) toast(d.message || 'Ошибка запуска', 'error');
+  else toast(`Чек запущен (${d.cards} карт)`, 'success');
+}
+
+async function stopCheck() {
+  await fetch('/api/check/stop', { method: 'POST' });
+  toast('Чек остановлен', 'error');
+}
+
+async function clearProxies() {
+  await uploadProxies(new File([''], 'empty.txt', { type: 'text/plain' }));
+  document.getElementById('proxyLoadedInfo').innerHTML = '';
+  toast('Прокси очищены');
+}
+
+async function clearCards() {
+  await uploadCards(new File([''], 'empty.txt', { type: 'text/plain' }));
+  document.getElementById('cardLoadedInfo').innerHTML = '';
+  toast('Карты очищены');
+}
+
+function exportResults() {
+  window.open('/api/results/export', '_blank');
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function toast(msg, type='') {
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
+  el.textContent = icon + ' ' + msg;
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+// ── Utils ─────────────────────────────────────────────────────────────────────
+function setText(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+function show(id) { document.getElementById(id).style.display = ''; }
+function hide(id) { document.getElementById(id).style.display = 'none'; }
+function truncate(s, n) { return s && s.length > n ? s.slice(0, n) + '…' : (s || ''); }
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+setupDropzone('proxyDrop', 'proxyFile', uploadProxies);
+setupDropzone('cardDrop', 'cardFile', uploadCards);
+connectWS();
+</script>
+</body>
+</html>
